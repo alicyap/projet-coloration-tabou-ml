@@ -103,7 +103,7 @@ Les métriques évaluées sont : nombre de conflits, nombre de couleurs utilisé
 ## Auteurs
 
 - **[Alim Samira ASTAGABDO AMADOU](https://github.com/Alim-Samira)** — Modélisation & opérateurs de voisinage
-- **[Lynda HAFIDI](https://github.com/Lynda-HAFIDI)** — Recherche Tabou & expérimentations  
-- **[Alicya-Pearl MARRAS](https://github.com/alicyap)** — Machine Learning & analyse des résultats
+- **[Alicya-Pearl MARRAS](https://github.com/alicyap)** — Recherche Tabou & expérimentations  
+- **[Lynda HAFIDI](https://github.com/Lynda-HAFIDI)**  — Machine Learning & analyse des résultats
 
 M1 MIAGE MIXTE — Université Paris Nanterre — 2025/2026

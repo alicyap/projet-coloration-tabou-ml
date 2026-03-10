@@ -65,6 +65,29 @@ sudo apt update
 sudo apt install python3-pip
 sudo apt install pipx
 ```
+Recommendé de créer un environment
+```bash
+python3 -m venv myenv
+```
+Activate the virtual environment:
+On Linux/macOS:
+```bash
+source myenv/bin/activate
+```
+On Windows:
+```bash
+myenv\Scripts\activate
+```
+Et enfin installer les dependances
+```bash
+pip install -r requirements.txt
+```
+Désactivé env quand fini
+(Recommendé pour revenir au path par defaut)
+```bash
+deactivate
+```
+
 
 ### 3. Lancer le notebook
 ```bash

@@ -69,12 +69,12 @@ Recommendé de créer un environment
 ```bash
 python3 -m venv myenv
 ```
-Activate the virtual environment:
-On Linux/macOS:
+Activé l'environment virtuel :
+Sur Linux/macOS:
 ```bash
 source myenv/bin/activate
 ```
-On Windows:
+Sur Windows:
 ```bash
 myenv\Scripts\activate
 ```

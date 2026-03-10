@@ -59,6 +59,12 @@ cd projet-coloration-tabou-ml
 ```bash
 pip install -r requirements.txt
 ```
+Sur linux
+```bash
+sudo apt update
+sudo apt install python3-pip
+sudo apt install pipx
+```
 
 ### 3. Lancer le notebook
 ```bash

@@ -47,6 +47,40 @@ OPERATOR_NAMES   = ['recolor', 'swap', 'kempe']
 # 1. Collecte des données d'entraînement
 # ============================================================
 
+def extract_features(G, coloring, no_improve_count, max_iter, n_colors):
+    """
+    Extrait les features de l'état courant pour le modèle ML.
+
+    Features :
+        0 - ratio_conflits            : conflits / nb_arêtes
+        1 - plateau_norm              : itérations sans amélioration / max_iter
+        2 - densite_graphe            : densité du graphe
+        3 - entropie_couleurs         : entropie de la distribution des couleurs
+        4 - taux_utilisation_couleurs : nb_couleurs_utilisées / n_colors
+        5 - conflits_par_noeud        : conflits / nb_nœuds
+    """
+    n_conflicts = count_conflicts(G, coloring)
+    conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
+
+    color_counts = defaultdict(int)
+    for c in coloring.values():
+        color_counts[c] += 1
+
+    color_entropy = -sum(
+        (v / G.number_of_nodes()) * np.log(v / G.number_of_nodes() + 1e-9)
+        for v in color_counts.values()
+    )
+
+    return [
+        conflict_ratio,
+        no_improve_count / max(max_iter, 1),
+        nx.density(G),
+        color_entropy,
+        len(set(coloring.values())) / n_colors,
+        n_conflicts / max(G.number_of_nodes(), 1),
+    ]
+
+
 def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
     """
     Génère le dataset supervisé pour entraîner le classifieur ML.
@@ -78,23 +112,9 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
                 n_conflicts = count_conflicts(G, current)
 
                 # Features
-                conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
-                color_counts   = defaultdict(int)
-                for c in current.values():
-                    color_counts[c] += 1
-                color_entropy = -sum(
-                    (v / G.number_of_nodes()) *
-                    np.log(v / G.number_of_nodes() + 1e-9)
-                    for v in color_counts.values()
+                features = extract_features(
+                  G, current, no_improve, max_iter, n_colors
                 )
-                features = [
-                    conflict_ratio,
-                    no_improve / max(max_iter, 1),
-                    nx.density(G),
-                    color_entropy,
-                    len(set(current.values())) / n_colors,
-                    n_conflicts / max(G.number_of_nodes(), 1),
-                ]
 
                 # Tester les 3 opérateurs — étiqueter avec le meilleur delta
                 results = {}

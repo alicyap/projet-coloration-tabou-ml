@@ -1,5 +1,5 @@
 # ============================================================
-# src/experiments.py
+# src/tabu_experiments.py
 # Expérimentations et comparaisons des différents modes Tabou.
 # Toutes les fonctions produisent des figures sauvegardables.
 # ============================================================

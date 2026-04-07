@@ -1,8 +1,3 @@
-# ============================================================
-# tabu.py — Algorithme de Recherche Tabou
-# Responsable : [Prénom NOM]
-# ============================================================
-
 import random
 import numpy as np
 import networkx as nx
@@ -12,7 +7,6 @@ from src.graph import initial_solution, objective, count_conflicts
 from src.operators import op_recolor, op_swap, op_kempe_chain
 
 SEED = 42
-
 
 def extract_features(G, coloring, no_improve_count, max_iter, n_colors):
     """

@@ -117,36 +117,34 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
                 )
 
                 # Tester les 3 opérateurs — étiqueter avec le meilleur delta
-                results = {}
-                r, _, d    = op_recolor(G, current, n_colors, tabu_list)
-                results['recolor'] = d if r is not None else float('inf')
+                                # Tester les 3 opérateurs une seule fois
+                candidates = {}
 
-                r, _, d    = op_swap(G, current, n_colors, tabu_list)
-                results['swap']    = d if r is not None else float('inf')
+                neighbor_r, move_r, delta_r = op_recolor(G, current, n_colors, tabu_list)
+                if neighbor_r is not None:
+                    candidates['recolor'] = (neighbor_r, move_r, delta_r)
 
-                r, _, d, _ = op_kempe_chain(G, current, n_colors, tabu_list)
-                results['kempe']   = d if r is not None else float('inf')
+                neighbor_s, move_s, delta_s = op_swap(G, current, n_colors, tabu_list)
+                if neighbor_s is not None:
+                    candidates['swap'] = (neighbor_s, move_s, delta_s)
 
-                best_op = min(results, key=results.get)
-                if results[best_op] == float('inf'):
+                neighbor_k, move_k, delta_k, chain_len_k = op_kempe_chain(
+                    G, current, n_colors, tabu_list
+                )
+                if neighbor_k is not None:
+                    candidates['kempe'] = (neighbor_k, move_k, delta_k)
+
+                if not candidates:
                     break
+
+                best_op = min(candidates, key=lambda op: candidates[op][2])
+                neighbor, move, best_delta = candidates[best_op]
 
                 X.append(features)
                 y.append(OPERATOR_MAP[best_op])
 
-                # Appliquer le meilleur opérateur pour continuer la trajectoire
-                if best_op == 'recolor':
-                    neighbor, move, _ = op_recolor(G, current, n_colors, tabu_list)
-                elif best_op == 'swap':
-                    neighbor, move, _ = op_swap(G, current, n_colors, tabu_list)
-                else:
-                    neighbor, move, _, _ = op_kempe_chain(
-                        G, current, n_colors, tabu_list)
-
-                if neighbor is None:
-                    break
-
                 new_obj = objective(G, neighbor)
+
                 no_improve = 0 if new_obj < current_obj else no_improve + 1
 
                 current = neighbor

@@ -97,54 +97,57 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
     """
     X, y = [], []
 
+    available_counts = {op: 0 for op in OPERATOR_NAMES}
+    best_counts = {op: 0 for op in OPERATOR_NAMES}
+
     for G in graphs:
         for run in range(n_runs_per_graph):
             seed_run = SEED + run
             random.seed(seed_run)
             np.random.seed(seed_run)
 
-            current   = initial_solution(G, n_colors)
+            current = initial_solution(G, n_colors)
             tabu_list = deque(maxlen=10 * G.number_of_nodes())
             no_improve = 0
 
             for it in range(max_iter):
                 current_obj = objective(G, current)
-                n_conflicts = count_conflicts(G, current)
 
-                # Features
                 features = extract_features(
-                  G, current, no_improve, max_iter, n_colors
+                    G, current, no_improve, max_iter, n_colors
                 )
 
-                # Tester les 3 opérateurs — étiqueter avec le meilleur delta
-                                # Tester les 3 opérateurs une seule fois
+                # Tester les 3 opérateurs une seule fois et conserver les candidats
                 candidates = {}
 
                 neighbor_r, move_r, delta_r = op_recolor(G, current, n_colors, tabu_list)
                 if neighbor_r is not None:
                     candidates['recolor'] = (neighbor_r, move_r, delta_r)
+                    available_counts['recolor'] += 1
 
                 neighbor_s, move_s, delta_s = op_swap(G, current, n_colors, tabu_list)
                 if neighbor_s is not None:
                     candidates['swap'] = (neighbor_s, move_s, delta_s)
+                    available_counts['swap'] += 1
 
                 neighbor_k, move_k, delta_k, chain_len_k = op_kempe_chain(
                     G, current, n_colors, tabu_list
                 )
                 if neighbor_k is not None:
                     candidates['kempe'] = (neighbor_k, move_k, delta_k)
+                    available_counts['kempe'] += 1
 
                 if not candidates:
                     break
 
                 best_op = min(candidates, key=lambda op: candidates[op][2])
+                best_counts[best_op] += 1
                 neighbor, move, best_delta = candidates[best_op]
 
                 X.append(features)
                 y.append(OPERATOR_MAP[best_op])
 
                 new_obj = objective(G, neighbor)
-
                 no_improve = 0 if new_obj < current_obj else no_improve + 1
 
                 current = neighbor
@@ -154,8 +157,11 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
                 if count_conflicts(G, current) == 0:
                     break
 
-    return np.array(X), np.array(y)
+    print("\nDiagnostic collecte ML :")
+    print("Opérateurs disponibles :", available_counts)
+    print("Opérateurs choisis comme meilleurs :", best_counts)
 
+    return np.array(X), np.array(y)
 
 # ============================================================
 # 2. Entraînement du modèle
@@ -305,7 +311,7 @@ def evaluate_model(rf_model, scaler, df_features):
 
     importances = rf_model.feature_importances_
     ax2.barh(FEATURE_NAMES, importances, color='steelblue')
-    ax2.set_title("Importance des features (Random Forest)", fontsize=12)
+    ax2.set_title("Importance des variables dans la prédiction de l'opérateur", fontsize=12)
     ax2.set_xlabel("Importance")
 
     plt.tight_layout()

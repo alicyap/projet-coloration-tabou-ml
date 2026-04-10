@@ -129,12 +129,20 @@ def objective(G, coloring, alpha=10, beta=1):
 
 def initial_solution(G, n_colors=None):
     """
-    Solution initiale par algorithme greedy (largest_first).
-    Si n_colors est fourni, on force l'usage de k couleurs (peut créer des conflits).
+    Solution initiale. 
+    Pour tester les algorithmes, on peut introduire un peu de hasard 
+    si on veut éviter que le greedy ne trouve tout de suite la solution parfaite.
     """
+    # Option A (actuelle) : Très performante, trouve souvent 0 conflit sur la France
     greedy = nx.coloring.greedy_color(G, strategy='largest_first')
+    
+    # Option B (pour le test) : On peut bruiter la solution pour forcer des conflits
+    # dict_sol = {node: random.randint(0, n_colors-1) for node in G.nodes()}
+    
     if n_colors is None:
         return dict(greedy)
+    
+    # On réduit modulo n_colors pour forcer la contrainte
     return {node: color % n_colors for node, color in greedy.items()}
 
 

@@ -129,7 +129,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
 
     if (classes_manquantes or df['operateur'].value_counts().min() < 5) \
             and train_graphs is not None:
-        print(f"⚠️  Classes absentes/rares : {classes_manquantes}")
+        print(f"  Classes absentes/rares : {classes_manquantes}")
         print("   → Enrichissement du dataset...")
         X_extra, y_extra = collect_training_data(
             train_graphs, n_colors=n_colors,

@@ -36,8 +36,45 @@ OPERATOR_NAMES   = ['recolor', 'swap', 'kempe']
 # 1. Collecte des données d'entraînement
 # ============================================================
 
+def extract_features(G, coloring, no_improve_count, max_iter, n_colors):
+    """
+    Extrait les features de l'état courant pour le modèle ML.
+
+    Features :
+        0 - ratio_conflits            : conflits / nb_arêtes
+        1 - plateau_norm              : itérations sans amélioration / max_iter
+        2 - densite_graphe            : densité du graphe
+        3 - entropie_couleurs         : entropie de la distribution des couleurs
+        4 - taux_utilisation_couleurs : nb_couleurs_utilisées / n_colors
+        5 - conflits_par_noeud        : conflits / nb_nœuds
+    """
+    n_conflicts = count_conflicts(G, coloring)
+    conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
+
+    color_counts = defaultdict(int)
+    for c in coloring.values():
+        color_counts[c] += 1
+
+    color_entropy = -sum(
+        (v / G.number_of_nodes()) * np.log(v / G.number_of_nodes() + 1e-9)
+        for v in color_counts.values()
+    )
+
+    return [
+        conflict_ratio,
+        no_improve_count / max(max_iter, 1),
+        nx.density(G),
+        color_entropy,
+        len(set(coloring.values())) / n_colors,
+        n_conflicts / max(G.number_of_nodes(), 1),
+    ]
+
+
 def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
     X, y = [], []
+
+    available_counts = {op: 0 for op in OPERATOR_NAMES}
+    best_counts = {op: 0 for op in OPERATOR_NAMES}
 
     for G in graphs:
         for run in range(n_runs_per_graph):
@@ -45,62 +82,46 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
             random.seed(seed_run)
             np.random.seed(seed_run)
 
-            current   = initial_solution(G, n_colors)
+            current = initial_solution(G, n_colors)
             tabu_list = deque(maxlen=10 * G.number_of_nodes())
             no_improve = 0
 
             for it in range(max_iter):
                 current_obj = objective(G, current)
-                n_conflicts = count_conflicts(G, current)
 
-                # Calcule les features de l'état courant
-                conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
-                color_counts   = defaultdict(int)
-                for c in current.values():
-                    color_counts[c] += 1
-                color_entropy = -sum(
-                    (v / G.number_of_nodes()) *
-                    np.log(v / G.number_of_nodes() + 1e-9)
-                    for v in color_counts.values()
+                features = extract_features(
+                    G, current, no_improve, max_iter, n_colors
                 )
-                features = [
-                    conflict_ratio,
-                    no_improve / max(max_iter, 1),
-                    nx.density(G),
-                    color_entropy,
-                    len(set(current.values())) / n_colors,
-                    n_conflicts / max(G.number_of_nodes(), 1),
-                ]
 
-                # Tester les 3 opérateurs — étiqueter avec le meilleur delta
-                results = {}
-                r, _, d    = op_recolor(G, current, n_colors, tabu_list)
-                results['recolor'] = d if r is not None else float('inf')
+                # Tester les 3 opérateurs une seule fois et conserver les candidats
+                candidates = {}
 
-                r, _, d    = op_swap(G, current, n_colors, tabu_list)
-                results['swap']    = d if r is not None else float('inf')
+                neighbor_r, move_r, delta_r = op_recolor(G, current, n_colors, tabu_list)
+                if neighbor_r is not None:
+                    candidates['recolor'] = (neighbor_r, move_r, delta_r)
+                    available_counts['recolor'] += 1
 
-                r, _, d, _ = op_kempe_chain(G, current, n_colors, tabu_list)
-                results['kempe']   = d if r is not None else float('inf')
+                neighbor_s, move_s, delta_s = op_swap(G, current, n_colors, tabu_list)
+                if neighbor_s is not None:
+                    candidates['swap'] = (neighbor_s, move_s, delta_s)
+                    available_counts['swap'] += 1
 
-                best_op = min(results, key=results.get)
-                if results[best_op] == float('inf'):
+                neighbor_k, move_k, delta_k, chain_len_k = op_kempe_chain(
+                    G, current, n_colors, tabu_list
+                )
+                if neighbor_k is not None:
+                    candidates['kempe'] = (neighbor_k, move_k, delta_k)
+                    available_counts['kempe'] += 1
+
+                if not candidates:
                     break
+
+                best_op = min(candidates, key=lambda op: candidates[op][2])
+                best_counts[best_op] += 1
+                neighbor, move, best_delta = candidates[best_op]
 
                 X.append(features)
                 y.append(OPERATOR_MAP[best_op])
-
-                # Appliquer le meilleur opérateur pour continuer la trajectoire
-                if best_op == 'recolor':
-                    neighbor, move, _ = op_recolor(G, current, n_colors, tabu_list)
-                elif best_op == 'swap':
-                    neighbor, move, _ = op_swap(G, current, n_colors, tabu_list)
-                else:
-                    neighbor, move, _, _ = op_kempe_chain(
-                        G, current, n_colors, tabu_list)
-
-                if neighbor is None:
-                    break
 
                 new_obj = objective(G, neighbor)
                 no_improve = 0 if new_obj < current_obj else no_improve + 1
@@ -112,14 +133,28 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
                 if count_conflicts(G, current) == 0:
                     break
 
-    return np.array(X), np.array(y)
+    print("\nDiagnostic collecte ML :")
+    print("Opérateurs disponibles :", available_counts)
+    print("Opérateurs choisis comme meilleurs :", best_counts)
 
-
+    return np.array(X), np.array(y) 
 # ============================================================
 # 2. Entraînement du modèle
 # ============================================================
-
 def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
+    """
+    Prépare les données, équilibre les classes et entraîne un Random Forest.
+
+    Paramètres :
+        X_raw        : features brutes (np.array)
+        y_raw        : labels bruts (np.array)
+        train_graphs : graphes supplémentaires si enrichissement nécessaire
+        n_colors     : nombre de couleurs (pour l'éventuel enrichissement)
+
+    Retourne :
+        rf_model, scaler, df_features
+    """
+    
     df = pd.DataFrame(X_raw, columns=FEATURE_NAMES)
     df['operateur'] = [OPERATOR_NAMES[l] for l in y_raw]
 
@@ -141,13 +176,19 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
         print(df['operateur'].value_counts())
 
     # Équilibrage des classes
-    min_class   = max(df['operateur'].value_counts().min(), 10)
+    max_class = df['operateur'].value_counts().max()
+
     df_balanced = pd.concat([
         resample(df[df['operateur'] == op],
-                 replace=True, n_samples=min_class, random_state=SEED)
+                replace=True,
+                n_samples=max_class,
+                random_state=SEED)
         for op in OPERATOR_NAMES
         if op in df['operateur'].values
     ])
+
+    print("\nDistribution après équilibrage :")
+    print(df_balanced['operateur'].value_counts())
 
     X_bal = df_balanced[FEATURE_NAMES].values
     y_bal = df_balanced['operateur'].map(OPERATOR_MAP).values
@@ -169,7 +210,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
         n_estimators=200,
         max_depth=10,
         random_state=SEED,
-        n_jobs=-1
+        n_jobs=1
     )
     rf_model.fit(X_tr_s, y_tr)
 
@@ -197,6 +238,15 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
 # ============================================================
 
 def evaluate_model(rf_model, scaler, df_features):
+    """
+    Affiche :
+      - la distribution des features par opérateur
+      - la matrice de confusion
+      - l'importance des features
+    """
+    print("\nDistribution des opérateurs dans le dataset :")
+    print(df_features['operateur'].value_counts())
+
     X_bal   = df_features[FEATURE_NAMES].values
     y_bal   = df_features['operateur'].map(OPERATOR_MAP).values
     _, X_te, _, y_te = train_test_split(
@@ -218,7 +268,7 @@ def evaluate_model(rf_model, scaler, df_features):
         axes[i].set_title(feat, fontsize=10)
         axes[i].legend(fontsize=8)
 
-    plt.suptitle("Distribution des features par opérateur optimal", fontsize=13)
+    plt.suptitle("Distribution des variables explicatives selon l'opérateur optimal", fontsize=13)
     plt.tight_layout()
     plt.show()
 
@@ -236,7 +286,7 @@ def evaluate_model(rf_model, scaler, df_features):
 
     importances = rf_model.feature_importances_
     ax2.barh(FEATURE_NAMES, importances, color='steelblue')
-    ax2.set_title("Importance des features (Random Forest)", fontsize=12)
+    ax2.set_title("Importance des variables dans la prédiction de l'opérateur", fontsize=12)
     ax2.set_xlabel("Importance")
 
     plt.tight_layout()

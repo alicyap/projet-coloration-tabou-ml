@@ -160,8 +160,7 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
 # ============================================================
 # 2. Entraînement du modèle
 # ============================================================
-
-def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
+def evaluate_model(rf_model, scaler, df_features):
     """
     Prépare les données, équilibre les classes et entraîne un Random Forest.
 
@@ -174,6 +173,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
     Retourne :
         rf_model, scaler, df_features
     """
+    
     df = pd.DataFrame(X_raw, columns=FEATURE_NAMES)
     df['operateur'] = [OPERATOR_NAMES[l] for l in y_raw]
 
@@ -183,7 +183,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
 
     if (classes_manquantes or df['operateur'].value_counts().min() < 5) \
             and train_graphs is not None:
-        print(f"⚠️  Classes absentes/rares : {classes_manquantes}")
+        print(f"  Classes absentes/rares : {classes_manquantes}")
         print("   → Enrichissement du dataset...")
         X_extra, y_extra = collect_training_data(
             train_graphs, n_colors=n_colors,
@@ -257,6 +257,9 @@ def evaluate_model(rf_model, scaler, df_features):
       - la matrice de confusion
       - l'importance des features
     """
+    print("\nDistribution des opérateurs dans le dataset :")
+    print(df_features['operateur'].value_counts())
+
     X_bal   = df_features[FEATURE_NAMES].values
     y_bal   = df_features['operateur'].map(OPERATOR_MAP).values
     _, X_te, _, y_te = train_test_split(
@@ -278,7 +281,7 @@ def evaluate_model(rf_model, scaler, df_features):
         axes[i].set_title(feat, fontsize=10)
         axes[i].legend(fontsize=8)
 
-    plt.suptitle("Distribution des features par opérateur optimal", fontsize=13)
+    plt.suptitle("Distribution des variables explicatives selon l'opérateur optimal", fontsize=13)
     plt.tight_layout()
     plt.show()
 

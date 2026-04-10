@@ -161,8 +161,7 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
     print("Opérateurs disponibles :", available_counts)
     print("Opérateurs choisis comme meilleurs :", best_counts)
 
-    return np.array(X), np.array(y)
-
+    return np.array(X), np.array(y) 
 # ============================================================
 # 2. Entraînement du modèle
 # ============================================================
@@ -235,7 +234,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
         n_estimators=200,
         max_depth=10,
         random_state=SEED,
-        n_jobs=-1
+        n_jobs=1
     )
     rf_model.fit(X_tr_s, y_tr)
 

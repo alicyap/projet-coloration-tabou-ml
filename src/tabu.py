@@ -9,17 +9,6 @@ from src.operators import op_recolor, op_swap, op_kempe_chain
 SEED = 42
 
 def extract_features(G, coloring, no_improve_count, max_iter, n_colors):
-    """
-    Calcule les 6 features de l'état courant pour le modèle ML.
-
-    Features :
-        0 - ratio_conflits            : conflits / nb_arêtes
-        1 - plateau_norm              : itérations sans amélioration / max_iter
-        2 - densite_graphe            : densité du graphe
-        3 - entropie_couleurs         : entropie de la distribution des couleurs
-        4 - taux_utilisation_couleurs : nb_couleurs_utilisées / n_colors
-        5 - conflits_par_noeud        : conflits / nb_nœuds
-    """
     n_conflicts    = count_conflicts(G, coloring)
     conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
 
@@ -52,23 +41,6 @@ def tabu_search(
     scaler        = None,
     verbose       = False
 ):
-    """
-    Recherche Tabou pour la coloration de graphe.
-
-    Paramètres :
-        G             : graphe NetworkX
-        n_colors      : nombre de couleurs autorisées
-        max_iter      : nombre max d'itérations
-        tabu_tenure   : durée de vie d'un mouvement dans la liste tabou
-        operator_mode : stratégie de sélection d'opérateur
-        ml_model      : modèle ML entraîné (requis si operator_mode='ml')
-        scaler        : StandardScaler associé au modèle ML
-        verbose       : affichage des logs
-
-    Retourne :
-        dict avec best_coloring, best_obj, best_conflicts, best_n_colors,
-        history (obj, conflicts, n_colors, operators, features), n_iter
-    """
     # --- Initialisation ---
     current   = initial_solution(G, n_colors)
     best      = dict(current)

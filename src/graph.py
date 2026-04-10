@@ -1,6 +1,5 @@
 # ============================================================
 # graph.py — Modélisation du problème de coloration
-# Responsable : [Prénom NOM]
 # ============================================================
 
 import numpy as np
@@ -16,10 +15,6 @@ SEED = 42
 # ============================================================
 
 def generate_map_graph(n_regions=20, seed=SEED):
-    """
-    Génère un graphe planaire simulant une carte géographique.
-    Utilise un graphe de Delaunay approximé via positions aléatoires.
-    """
     np.random.seed(seed)
     G = nx.random_geometric_graph(n_regions, radius=3.5, seed=seed)
     if not nx.is_connected(G):
@@ -32,10 +27,6 @@ def generate_map_graph(n_regions=20, seed=SEED):
 
 
 def generate_dsjc_like(n, p, seed=SEED):
-    """
-    Génère un graphe aléatoire de type DSJC (benchmark classique).
-    n = nombre de nœuds, p = probabilité d'arête.
-    """
     G = nx.erdos_renyi_graph(n, p, seed=seed)
     if not nx.is_connected(G):
         components = list(nx.connected_components(G))
@@ -77,12 +68,11 @@ def initial_solution(G, n_colors=None):
 
 
 def solution_info(G, coloring):
-    """Affiche un résumé de la solution."""
     c = count_conflicts(G, coloring)
     k = len(set(coloring.values()))
-    print(f"  Conflits    : {c}")
-    print(f"  Nb couleurs : {k}")
-    print(f"  Objectif    : {objective(G, coloring)}")
+    print(f" Conflits : {c}")
+    print(f" Nb couleurs : {k}")
+    print(f" Objectif : {objective(G, coloring)}")
 
 
 # ============================================================
@@ -90,10 +80,6 @@ def solution_info(G, coloring):
 # ============================================================
 
 def visualize_coloring(G, coloring, title="Coloration du graphe", seed=SEED):
-    """
-    Affiche le graphe avec sa coloration.
-    coloring : dict {nœud: couleur (int)}
-    """
     palette     = plt.cm.get_cmap('tab10', max(coloring.values()) + 1)
     node_colors = [palette(coloring[n]) for n in G.nodes()]
 

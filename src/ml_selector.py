@@ -1,14 +1,3 @@
-# ============================================================
-# ml_selector.py — Sélection d'opérateur par Machine Learning
-# Responsable : [Prénom NOM]
-# ============================================================
-#
-# Pipeline :
-#   1. collect_training_data() — génère le dataset supervisé
-#   2. train_model()           — entraîne le Random Forest
-#   3. evaluate_model()        — évalue et affiche les métriques
-# ============================================================
-
 import random
 import numpy as np
 import pandas as pd
@@ -48,19 +37,6 @@ OPERATOR_NAMES   = ['recolor', 'swap', 'kempe']
 # ============================================================
 
 def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
-    """
-    Génère le dataset supervisé pour entraîner le classifieur ML.
-
-    Pour chaque itération de chaque run :
-      - calcule les features de l'état courant
-      - teste les 3 opérateurs et étiquette avec le meilleur delta
-
-    Label : 0=recolor, 1=swap, 2=kempe
-
-    Retourne :
-        X : np.array (n_samples, n_features)
-        y : np.array (n_samples,)
-    """
     X, y = [], []
 
     for G in graphs:
@@ -77,7 +53,7 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
                 current_obj = objective(G, current)
                 n_conflicts = count_conflicts(G, current)
 
-                # Features
+                # Calcule les features de l'état courant
                 conflict_ratio = n_conflicts / max(G.number_of_edges(), 1)
                 color_counts   = defaultdict(int)
                 for c in current.values():
@@ -144,22 +120,10 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
 # ============================================================
 
 def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
-    """
-    Prépare les données, équilibre les classes et entraîne un Random Forest.
-
-    Paramètres :
-        X_raw        : features brutes (np.array)
-        y_raw        : labels bruts (np.array)
-        train_graphs : graphes supplémentaires si enrichissement nécessaire
-        n_colors     : nombre de couleurs (pour l'éventuel enrichissement)
-
-    Retourne :
-        rf_model, scaler, df_features
-    """
     df = pd.DataFrame(X_raw, columns=FEATURE_NAMES)
     df['operateur'] = [OPERATOR_NAMES[l] for l in y_raw]
 
-    # Diagnostic — enrichissement si classe absente ou trop rare
+    # Diagnostic : enrichissement si classe absente ou trop rare
     classes_presentes  = set(df['operateur'].unique())
     classes_manquantes = [op for op in OPERATOR_NAMES if op not in classes_presentes]
 
@@ -233,12 +197,6 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
 # ============================================================
 
 def evaluate_model(rf_model, scaler, df_features):
-    """
-    Affiche :
-      - la distribution des features par opérateur
-      - la matrice de confusion
-      - l'importance des features
-    """
     X_bal   = df_features[FEATURE_NAMES].values
     y_bal   = df_features['operateur'].map(OPERATOR_MAP).values
     _, X_te, _, y_te = train_test_split(

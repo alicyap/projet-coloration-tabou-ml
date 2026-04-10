@@ -64,41 +64,34 @@ FRANCE_ADJACENCY = [
 
 def generate_map_graph(n_regions=None, seed=SEED):
     """
-    Génère un graphe représentant la carte des 13 régions métropolitaines françaises.
-    Les nœuds sont les régions, les arêtes représentent les frontières réelles.
-
-    Le paramètre n_regions est conservé pour compatibilité avec le reste du code,
-    mais ignoré : on utilise toujours les 13 régions officielles.
-
-    Attributs des nœuds :
-        - 'pos' : (longitude, latitude) pour la visualisation
-        - 'label' : nom de la région
+    Génère la carte de France (13 régions) par défaut, ou un graphe aléatoire
+    si une taille spécifique différente de 13 est demandée.
     """
-    G = nx.Graph()
+    # Si on demande 13 régions (France) ou si aucune taille n'est précisée
+    if n_regions is None or n_regions == 13:
+        G = nx.Graph()
+        region_names = list(FRANCE_REGIONS.keys())
+        
+        for idx, name in enumerate(region_names):
+            lon, lat = FRANCE_REGIONS[name]
+            G.add_node(idx, pos=(lon, lat), label=name)
 
-    # Ajout des nœuds avec attributs de position
-    region_names = list(FRANCE_REGIONS.keys())
-    for idx, name in enumerate(region_names):
-        lon, lat = FRANCE_REGIONS[name]
-        G.add_node(idx, pos=(lon, lat), label=name)
+        name_to_id = {name: i for i, name in enumerate(region_names)}
 
-    # Index name → id
-    name_to_id = {name: i for i, name in enumerate(region_names)}
+        for r1, r2 in FRANCE_ADJACENCY:
+            G.add_edge(name_to_id[r1], name_to_id[r2])
 
-    # Ajout des arêtes selon les frontières réelles
-    for r1, r2 in FRANCE_ADJACENCY:
-        G.add_edge(name_to_id[r1], name_to_id[r2])
+        if not nx.is_connected(G):
+            components = list(nx.connected_components(G))
+            for i in range(len(components) - 1):
+                u, v = list(components[i])[0], list(components[i + 1])[0]
+                G.add_edge(u, v)
+        return G
 
-    # Garantit la connexité (normalement déjà vérifié via les adjacences)
-    if not nx.is_connected(G):
-        components = list(nx.connected_components(G))
-        for i in range(len(components) - 1):
-            u = list(components[i])[0]
-            v = list(components[i + 1])[0]
-            G.add_edge(u, v)
-
-    return G
-
+    # Fallback pour les tests de scalabilité (G_medium=30, G_large=50)
+    else:
+        G = nx.random_geometric_graph(n_regions, radius=0.4, seed=seed)
+        return G
 
 def generate_dsjc_like(n, p, seed=SEED):
     """

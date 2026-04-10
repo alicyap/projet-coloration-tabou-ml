@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# ============================================================
-# main.py — Script principal d'expérimentation
-# Lance toutes les expériences et affiche les résultats
-# ============================================================
-
 import random
 import time
 import numpy as np

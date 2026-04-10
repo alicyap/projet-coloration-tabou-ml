@@ -1,9 +1,3 @@
-# ============================================================
-# src/experiments.py
-# Expérimentations et comparaisons des différents modes Tabou.
-# Toutes les fonctions produisent des figures sauvegardables.
-# ============================================================
-
 import random
 import time
 import numpy as np
@@ -23,11 +17,6 @@ def run_comparison(G, modes: list = MODES, n_runs: int = 10,
                    n_colors: int = N_COLORS,
                    rf_model=None, scaler=None,
                    verbose: bool = False) -> dict:
-    """
-    Lance n_runs de Recherche Tabou pour chaque mode sur un graphe donné.
-
-    Retourne un dict {mode: [{'conflicts', 'n_colors', 'obj', 'time', 'n_iter'}, ...]}
-    """
     results = {m: [] for m in modes}
 
     for mode in modes:
@@ -62,9 +51,8 @@ def run_comparison(G, modes: list = MODES, n_runs: int = 10,
 
     return results
 
-
+# Récap des résultats dans un DataFrame
 def results_to_dataframe(results: dict) -> pd.DataFrame:
-    """Convertit les résultats en DataFrame récapitulatif."""
     rows = []
     for mode, data in results.items():
         rows.append({
@@ -83,7 +71,6 @@ def plot_convergence(G, modes: list = ('random', 'ml', 'kempe'),
                      max_iter: int = 500, n_colors: int = N_COLORS,
                      rf_model=None, scaler=None,
                      save_path: str = None) -> None:
-    """Trace les courbes de convergence (objectif + conflits) pour plusieurs modes."""
     random.seed(SEED); np.random.seed(SEED)
     colors_mode = {'random': 'gray', 'ml': 'crimson', 'kempe': 'steelblue',
                    'recolor': 'darkorange', 'swap': 'green'}
@@ -115,7 +102,6 @@ def plot_convergence(G, modes: list = ('random', 'ml', 'kempe'),
 
 
 def plot_boxplots(results: dict, save_path: str = None) -> None:
-    """Boxplots des conflits et temps de calcul pour chaque mode."""
     modes   = list(results.keys())
     palette = ['#4C72B0', '#DD8452', '#55A868', '#C44E52', '#8172B3']
 
@@ -147,12 +133,6 @@ def compare_instances(instances: list, modes: list = ('random', 'ml'),
                        n_colors: int = N_COLORS,
                        rf_model=None, scaler=None,
                        save_path: str = None) -> pd.DataFrame:
-    """
-    Compare les modes sur plusieurs instances.
-
-    instances : liste de (nom, graphe)
-    Retourne un DataFrame de résultats.
-    """
     rows = []
     for name, G in instances:
         for mode in modes:
@@ -207,9 +187,8 @@ def compare_instances(instances: list, modes: list = ('random', 'ml'),
 
     return df
 
-
+# Résumé des performances 
 def print_summary(results: dict, score_test: float = None) -> None:
-    """Affiche un résumé final des performances."""
     print("=" * 65)
     print("RÉSUMÉ FINAL DU PROJET")
     print("=" * 65)

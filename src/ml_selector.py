@@ -1,14 +1,3 @@
-# ============================================================
-# ml_selector.py — Sélection d'opérateur par Machine Learning
-# Responsable : [Prénom NOM]
-# ============================================================
-#
-# Pipeline :
-#   1. collect_training_data() — génère le dataset supervisé
-#   2. train_model()           — entraîne le Random Forest
-#   3. evaluate_model()        — évalue et affiche les métriques
-# ============================================================
-
 import random
 import numpy as np
 import pandas as pd
@@ -82,19 +71,6 @@ def extract_features(G, coloring, no_improve_count, max_iter, n_colors):
 
 
 def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
-    """
-    Génère le dataset supervisé pour entraîner le classifieur ML.
-
-    Pour chaque itération de chaque run :
-      - calcule les features de l'état courant
-      - teste les 3 opérateurs et étiquette avec le meilleur delta
-
-    Label : 0=recolor, 1=swap, 2=kempe
-
-    Retourne :
-        X : np.array (n_samples, n_features)
-        y : np.array (n_samples,)
-    """
     X, y = [], []
 
     available_counts = {op: 0 for op in OPERATOR_NAMES}
@@ -182,7 +158,7 @@ def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
     df = pd.DataFrame(X_raw, columns=FEATURE_NAMES)
     df['operateur'] = [OPERATOR_NAMES[l] for l in y_raw]
 
-    # Diagnostic — enrichissement si classe absente ou trop rare
+    # Diagnostic : enrichissement si classe absente ou trop rare
     classes_presentes  = set(df['operateur'].unique())
     classes_manquantes = [op for op in OPERATOR_NAMES if op not in classes_presentes]
 

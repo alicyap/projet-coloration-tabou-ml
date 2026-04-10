@@ -1,14 +1,3 @@
-# ============================================================
-# operators.py — Opérateurs de voisinage pour la Recherche Tabou
-# Responsable : [Prénom NOM]
-# ============================================================
-#
-# Trois opérateurs :
-#   - Recolor     : change la couleur d'un nœud en conflit
-#   - Swap        : échange les couleurs de deux nœuds
-#   - Kempe Chain : inverse deux couleurs i↔j dans une composante connexe (BFS)
-# ============================================================
-
 import random
 from collections import deque
 from itertools import combinations
@@ -18,16 +7,10 @@ from src.graph import objective
 
 # ============================================================
 # Opérateur 1 : RECOLOR
+# Génère le meilleur voisin par recoloration d'un nœud en conflit.
 # ============================================================
 
 def op_recolor(G, coloring, n_colors, tabu_list):
-    """
-    Génère le meilleur voisin par recoloration d'un nœud en conflit.
-
-    Retourne :
-        (nouvelle_coloring, mouvement, delta_objectif)
-        mouvement = (nœud, ancienne_couleur, nouvelle_couleur)
-    """
     best_neighbor = None
     best_delta    = float('inf')
     best_move     = None
@@ -62,16 +45,10 @@ def op_recolor(G, coloring, n_colors, tabu_list):
 
 # ============================================================
 # Opérateur 2 : SWAP
+# Génère le meilleur voisin par échange de couleurs entre deux nœuds.
 # ============================================================
 
 def op_swap(G, coloring, n_colors, tabu_list, n_candidates=20):
-    """
-    Génère le meilleur voisin par échange de couleurs entre deux nœuds.
-    n_candidates : nb de paires testées (limite le temps de calcul).
-
-    Retourne :
-        (nouvelle_coloring, mouvement, delta_objectif)
-    """
     best_neighbor = None
     best_delta    = float('inf')
     best_move     = None
@@ -98,18 +75,11 @@ def op_swap(G, coloring, n_colors, tabu_list, n_candidates=20):
 
 
 # ============================================================
-# Opérateur 3 : KEMPE CHAIN ⭐
+# Opérateur 3 : KEMPE CHAIN
 # ============================================================
 
 def get_kempe_chain(G, coloring, start_node, color_i, color_j):
-    """
-    Trouve la chaîne de Kempe contenant start_node pour les couleurs i et j.
-
-    Une chaîne de Kempe(i,j) est la composante connexe dans le sous-graphe
-    induit par les nœuds de couleur i ou j, contenant start_node.
-
-    Algorithme : BFS dans le sous-graphe {nœuds de couleur i ou j}.
-    """
+# Trouver la chaîne de Kempe contenant start_node pour les couleurs i et j.
     if coloring[start_node] not in (color_i, color_j):
         return set()
 
@@ -120,6 +90,7 @@ def get_kempe_chain(G, coloring, start_node, color_i, color_j):
     while queue:
         node = queue.popleft()
         chain.add(node)
+        # BFS dans le sous-graphe
         for neighbor in G.neighbors(node):
             if neighbor not in visited and coloring[neighbor] in (color_i, color_j):
                 visited.add(neighbor)
@@ -127,12 +98,8 @@ def get_kempe_chain(G, coloring, start_node, color_i, color_j):
 
     return chain
 
-
+# Appliquer l'inversion de Kempe pour tous les nœuds de la chaîne.
 def apply_kempe_chain(coloring, chain, color_i, color_j):
-    """
-    Applique l'inversion de Kempe : inverse color_i <-> color_j
-    pour tous les nœuds de la chaîne.
-    """
     new_col = dict(coloring)
     for node in chain:
         if new_col[node] == color_i:
@@ -141,15 +108,8 @@ def apply_kempe_chain(coloring, chain, color_i, color_j):
             new_col[node] = color_i
     return new_col
 
-
+# Générer le meilleur voisin par inversion de chaîne de Kempe.
 def op_kempe_chain(G, coloring, n_colors, tabu_list, n_candidates=15):
-    """
-    Génère le meilleur voisin par inversion de chaîne de Kempe.
-    Teste n_candidates combinaisons (nœud_départ, couleur_i, couleur_j).
-
-    Retourne :
-        (nouvelle_coloring, mouvement, delta_objectif, taille_chaine)
-    """
     best_neighbor  = None
     best_delta     = float('inf')
     best_move      = None
@@ -169,6 +129,7 @@ def op_kempe_chain(G, coloring, n_colors, tabu_list, n_candidates=15):
     random.shuffle(candidate_nodes)
     random.shuffle(color_pairs)
 
+    #Tester n_candidates combinaisons (nœud_départ, couleur_i, couleur_j).
     for start in candidate_nodes:
         for (ci, cj) in color_pairs:
             if attempts >= n_candidates:

@@ -160,7 +160,7 @@ def collect_training_data(graphs, n_colors=4, n_runs_per_graph=5, max_iter=300):
 # ============================================================
 # 2. Entraînement du modèle
 # ============================================================
-def evaluate_model(rf_model, scaler, df_features):
+def train_model(X_raw, y_raw, train_graphs=None, n_colors=4):
     """
     Prépare les données, équilibre les classes et entraîne un Random Forest.
 
@@ -195,13 +195,19 @@ def evaluate_model(rf_model, scaler, df_features):
         print(df['operateur'].value_counts())
 
     # Équilibrage des classes
-    min_class   = max(df['operateur'].value_counts().min(), 10)
+    max_class = df['operateur'].value_counts().max()
+
     df_balanced = pd.concat([
         resample(df[df['operateur'] == op],
-                 replace=True, n_samples=min_class, random_state=SEED)
+                replace=True,
+                n_samples=max_class,
+                random_state=SEED)
         for op in OPERATOR_NAMES
         if op in df['operateur'].values
     ])
+
+    print("\nDistribution après équilibrage :")
+    print(df_balanced['operateur'].value_counts())
 
     X_bal = df_balanced[FEATURE_NAMES].values
     y_bal = df_balanced['operateur'].map(OPERATOR_MAP).values
